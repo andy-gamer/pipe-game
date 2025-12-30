@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { CellData, PipeType, CustomerType, Difficulty } from './types.ts';
+import { CellData, PipeType, CustomerType, Difficulty, LevelData } from './types.ts';
 import { LEVELS } from './constants.ts';
 import { tracePath, getReachableCells, generateSolvableGrid } from './services/gameLogic.ts';
+import { audio } from './services/audio.ts';
+import { getShareUrl, decodeLevel } from './services/levelSharing.ts';
 
 // Components
 import Header from './components/Header.tsx';
@@ -52,12 +54,31 @@ export default function App() {
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [hintsRemaining, setHintsRemaining] = useState(MAX_HINTS);
+  const [isEditorMode, setIsEditorMode] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   useEffect(() => {
     const handleResize = () => setWindowDimensions({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Check for shared level in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('level');
+    if (code) {
+      const decoded = decodeLevel(code);
+      if (decoded) {
+        // Load custom level
+        const { rows, cols } = decoded.gridSize;
+        const newGrid = generateSolvableGrid(rows, cols, decoded.startRow, decoded.exitRow, decoded.targetCustomerCount);
+        setGrid(newGrid);
+        setInitialGrid(newGrid.map(row => row.map(cell => ({ ...cell }))));
+        setMessage("載入分享的自定義關卡！");
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
   
   const currentLevel = useMemo(() => LEVELS.find(l => l.id === levelId) || LEVELS[0], [levelId]);
@@ -110,11 +131,28 @@ export default function App() {
 
   useEffect(() => { resetLevel(); }, [resetLevel]);
 
-  const handleRotate = useCallback((id: string) => {
+  const handleCellClick = useCallback((id: string) => {
     if (isDriving || gameState !== 'playing') return;
-    setGrid(prev => prev.map(row => row.map(cell => cell.id === id ? { ...cell, rotation: (cell.rotation + 1) % 4, isHinted: false } : cell)));
-    if (tutorialStep === 1) setTutorialStep(2);
-  }, [isDriving, gameState, tutorialStep]);
+    
+    if (isEditorMode) {
+      // Editor logic: Cycle through states
+      setGrid(prev => prev.map(row => row.map(cell => {
+        if (cell.id === id) {
+          if (!cell.hasCustomer) return { ...cell, hasCustomer: true, customerType: CustomerType.BOUQUET };
+          if (cell.customerType === CustomerType.BOUQUET) return { ...cell, customerType: CustomerType.ROMANCE };
+          if (cell.customerType === CustomerType.ROMANCE) return { ...cell, customerType: CustomerType.WEDDING };
+          return { ...cell, hasCustomer: false, customerType: undefined };
+        }
+        return cell;
+      })));
+      audio.playRotate();
+    } else {
+      // Play logic: Rotate
+      setGrid(prev => prev.map(row => row.map(cell => cell.id === id ? { ...cell, rotation: (cell.rotation + 1) % 4, isHinted: false } : cell)));
+      audio.playRotate();
+      if (tutorialStep === 1) setTutorialStep(2);
+    }
+  }, [isDriving, gameState, tutorialStep, isEditorMode]);
 
   const handleHint = useCallback(() => {
     if (hintsRemaining <= 0 || isDriving || gameState !== 'playing') return;
@@ -130,6 +168,7 @@ export default function App() {
       const targetRotation = hintCell.solutionRotation!;
       setGrid(prev => prev.map(row => row.map(cell => cell.id === targetId ? { ...cell, rotation: targetRotation, isHinted: true } : cell)));
       setHintsRemaining(h => h - 1);
+      audio.playRotate();
       setMessage("花店助手為你修剪了這段路徑！");
       setTimeout(() => setGrid(prev => prev.map(row => row.map(cell => cell.id === targetId ? { ...cell, isHinted: false } : cell))), 3000);
     } else { setMessage("這條路已經開滿了鮮花！"); }
@@ -144,12 +183,14 @@ export default function App() {
       if (step < path.length) {
         const pCell = path[step];
         setCurrentScooterId(pCell.id);
+        audio.playDrive();
         if (pCell.hasCustomer && !pCell.isVisited) {
           let val = 300;
           if (pCell.customerType === CustomerType.WEDDING) val = 1500;
           else if (pCell.customerType === CustomerType.ROMANCE) val = 600;
           setScorePopups(prev => [...prev, { id: Math.random().toString(), x: pCell.x, y: pCell.y, value: val, type: pCell.customerType || CustomerType.BOUQUET }]);
           setScore(s => s + val);
+          audio.playCollect();
         }
         setGrid(prev => prev.map(row => row.map(cell => cell.id === pCell.id ? { ...cell, isVisited: true } : cell)));
         step++;
@@ -157,9 +198,16 @@ export default function App() {
         clearInterval(interval);
         const visitedTotal = path.filter(c => c.hasCustomer).length;
         if (reachedExit && visitedTotal >= currentLevel.targetCustomerCount) {
-          setGameState('success'); setStreak(s => s + 1); setScore(s => s + 500); setMessage(`鮮花準時送達！大家都感受到了幸福。`);
+          setGameState('success'); 
+          setStreak(s => s + 1); 
+          setScore(s => s + 500); 
+          setMessage(`鮮花準時送達！大家都感受到了幸福。`);
+          audio.playSuccess();
         } else {
-          setGameState('failed'); setStreak(0); setMessage(!reachedExit ? `找不到路... 鮮花快枯萎了。` : `還有客人的花沒送到！`);
+          setGameState('failed'); 
+          setStreak(0); 
+          setMessage(!reachedExit ? `找不到路... 鮮花快枯萎了。` : `還有客人的花沒送到！`);
+          audio.playFail();
         }
         setIsDriving(false);
       }
@@ -168,6 +216,18 @@ export default function App() {
 
   const handleNextLevel = () => setLevelId(prev => (prev < LEVELS.length ? prev + 1 : 1));
 
+  const handleShare = () => {
+    const shareUrl = getShareUrl({
+      difficulty: Difficulty.MEDIUM,
+      gridSize: currentLevel.gridSize,
+      startRow: currentLevel.startRow,
+      exitRow: currentLevel.exitRow,
+      targetCustomerCount: grid.flat().filter(c => c.hasCustomer).length,
+    });
+    navigator.clipboard.writeText(shareUrl);
+    setMessage("分享連結已複製到剪貼簿！");
+  };
+
   return (
     <div className="relative flex flex-col h-screen-safe max-w-md mx-auto bg-[#fdfbf7] text-[#5d5c58] overflow-hidden shadow-2xl">
       {gameState === 'success' && <ConfettiOverlay />}
@@ -175,14 +235,33 @@ export default function App() {
         if (tutorialStep < 3 && !(tutorialStep === 2 && hasPathToExit)) setTutorialStep(s => s + 1);
         else { setTutorialStep(0); localStorage.setItem(STORAGE_KEYS.TUTORIAL_DONE, 'true'); }
       }} />
-      <Header levelId={levelId} totalLevels={LEVELS.length} score={score} streak={streak} difficulty={currentLevel.difficulty} progressPercentage={progressPercentage} gridCols={currentLevel.gridSize.cols} gridRows={currentLevel.gridSize.rows} />
+      <Header 
+        levelId={levelId} totalLevels={LEVELS.length} score={score} streak={streak} 
+        difficulty={currentLevel.difficulty} progressPercentage={progressPercentage} 
+        gridCols={currentLevel.gridSize.cols} gridRows={currentLevel.gridSize.rows}
+        isEditorMode={isEditorMode} toggleEditor={() => setIsEditorMode(!isEditorMode)}
+      />
       <main className="flex-1 flex flex-col items-center justify-center px-4 relative">
-        <GameBoard grid={grid} currentLevel={currentLevel} reachableFromStart={reachableFromStart} isDriving={isDriving} currentScooterId={currentScooterId} onRotate={handleRotate} cellSize={cellSize} scorePopups={scorePopups} setScorePopups={setScorePopups} tutorialHighlight={tutorialStep === 1 || tutorialStep === 2} tutorialTargetId={levelId === 1 && tutorialStep === 1 ? `0-${currentLevel.startRow}` : null} />
+        <GameBoard 
+          grid={grid} currentLevel={currentLevel} reachableFromStart={reachableFromStart} 
+          isDriving={isDriving} currentScooterId={currentScooterId} onRotate={handleCellClick} 
+          cellSize={cellSize} scorePopups={scorePopups} setScorePopups={setScorePopups} 
+          tutorialHighlight={tutorialStep === 1 || tutorialStep === 2} 
+          tutorialTargetId={levelId === 1 && tutorialStep === 1 ? `0-${currentLevel.startRow}` : null} 
+        />
         <div className="mt-8 text-center w-full px-8 h-12 flex items-center justify-center">
-           <p className="text-xs text-[#a78b75] font-bold leading-relaxed italic">{isDriving ? "🚲🌸 正在配送鮮花..." : message}</p>
+           <p className="text-xs text-[#a78b75] font-bold leading-relaxed italic">
+             {isDriving ? "🚲🌸 正在配送鮮花..." : isEditorMode ? "編輯模式：點擊地格切換鮮花種類" : message}
+           </p>
         </div>
       </main>
-      <ControlPanel gameState={gameState} isDriving={isDriving} hasPathToExit={hasPathToExit} tutorialStep={tutorialStep} hintsRemaining={hintsRemaining} onCheckDelivery={handleCheckDelivery} onResetLevel={resetLevel} onRetryLevel={retryLevel} onNextLevel={handleNextLevel} onHint={handleHint} />
+      <ControlPanel 
+        gameState={gameState} isDriving={isDriving} hasPathToExit={hasPathToExit} 
+        tutorialStep={tutorialStep} hintsRemaining={hintsRemaining} 
+        onCheckDelivery={handleCheckDelivery} onResetLevel={resetLevel} onRetryLevel={retryLevel} 
+        onNextLevel={handleNextLevel} onHint={handleHint}
+        onShare={handleShare}
+      />
     </div>
   );
 }

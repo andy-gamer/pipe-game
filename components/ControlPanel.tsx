@@ -12,6 +12,7 @@ interface ControlPanelProps {
   onRetryLevel: () => void;
   onNextLevel: () => void;
   onHint: () => void;
+  onShare: () => void;
 }
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -24,7 +25,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   onResetLevel,
   onRetryLevel,
   onNextLevel,
-  onHint
+  onHint,
+  onShare
 }) => {
   return (
     <footer className="px-8 py-8 shrink-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
@@ -52,6 +54,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             >
               <span className="text-xl">💡</span>
               <span className="text-[10px] font-black">{hintsRemaining}</span>
+            </button>
+            
+            <button
+              onClick={onShare}
+              className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center transition-all shadow-lg btn-active bg-white text-rose-500 border border-rose-100"
+            >
+              <span className="text-lg">🔗</span>
+              <span className="text-[8px] font-black uppercase">分享</span>
             </button>
           </div>
           

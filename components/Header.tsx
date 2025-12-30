@@ -11,10 +11,12 @@ interface HeaderProps {
   progressPercentage: number;
   gridCols: number;
   gridRows: number;
+  isEditorMode: boolean;
+  toggleEditor: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
-  levelId, totalLevels, score, streak, difficulty, progressPercentage, gridCols, gridRows
+  levelId, totalLevels, score, streak, difficulty, progressPercentage, gridCols, gridRows, isEditorMode, toggleEditor
 }) => {
   const diffColors = {
     [Difficulty.EASY]: 'bg-emerald-50 text-emerald-600',
@@ -31,6 +33,12 @@ const Header: React.FC<HeaderProps> = ({
             <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${diffColors[difficulty]}`}>
               {difficulty}
             </span>
+            <button 
+              onClick={toggleEditor}
+              className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase transition-colors ${isEditorMode ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-400'}`}
+            >
+              {isEditorMode ? '編輯中' : '自定義'}
+            </button>
           </div>
           <span className="text-[10px] text-gray-400 font-medium tracking-wide">讓每一份思念都能準時抵達</span>
         </div>
