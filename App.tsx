@@ -14,10 +14,9 @@ interface ScorePopup {
 }
 
 const STORAGE_KEYS = {
-  LEVEL_IDX: 'delivery-pipe-level-idx-v4',
-  SCORE: 'delivery-pipe-score-v4',
-  STREAK: 'delivery-pipe-streak-v4',
-  DIFFICULTY: 'delivery-pipe-difficulty-v4',
+  CURRENT_LEVEL_ID: 'delivery-pipe-global-level-id-v5',
+  SCORE: 'delivery-pipe-score-v5',
+  STREAK: 'delivery-pipe-streak-v5',
 };
 
 const Confetti: React.FC = () => {
@@ -51,18 +50,9 @@ const Confetti: React.FC = () => {
 };
 
 export default function App() {
-  const [difficulty, setDifficulty] = useState<Difficulty>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.DIFFICULTY);
-    return (saved as Difficulty) || Difficulty.EASY;
-  });
-
-  const filteredLevels = useMemo(() => {
-    return LEVELS.filter(l => l.difficulty === difficulty);
-  }, [difficulty]);
-
-  const [levelIndex, setLevelIndex] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.LEVEL_IDX);
-    return saved ? parseInt(saved, 10) : 0;
+  const [levelId, setLevelId] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_LEVEL_ID);
+    return saved ? parseInt(saved, 10) : 1;
   });
 
   const [score, setScore] = useState(() => {
@@ -83,31 +73,18 @@ export default function App() {
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   
   const currentLevel = useMemo(() => {
-    const idx = levelIndex >= filteredLevels.length ? 0 : levelIndex;
-    return filteredLevels[idx] || filteredLevels[0];
-  }, [levelIndex, filteredLevels]);
+    return LEVELS.find(l => l.id === levelId) || LEVELS[0];
+  }, [levelId]);
 
   const reachableFromStart = useMemo(() => {
     if (grid.length === 0 || !currentLevel) return new Set<string>();
     return getReachableCells(grid, currentLevel.startRow);
   }, [grid, currentLevel]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DIFFICULTY, difficulty);
-    setLevelIndex(0);
-  }, [difficulty]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.LEVEL_IDX, levelIndex.toString());
-  }, [levelIndex]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SCORE, score.toString());
-  }, [score]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.STREAK, streak.toString());
-  }, [streak]);
+  // Persist state
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.CURRENT_LEVEL_ID, levelId.toString()), [levelId]);
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.SCORE, score.toString()), [score]);
+  useEffect(() => localStorage.setItem(STORAGE_KEYS.STREAK, streak.toString()), [streak]);
 
   const resetLevel = useCallback(() => {
     if (!currentLevel) return;
@@ -145,7 +122,10 @@ export default function App() {
     setGameState('playing');
     setCurrentScooterId(null);
     setScorePopups([]);
-    setMessage(`規劃巷弄！連通左側入口與右側出口以完成配送。`);
+    
+    const diffText = currentLevel.difficulty === Difficulty.EASY ? '簡單輕鬆' : 
+                   currentLevel.difficulty === Difficulty.MEDIUM ? '普通社區' : '困難巷弄';
+    setMessage(`第 ${currentLevel.id} 關：${diffText}。目標顧客：${currentLevel.targetCustomerCount} 位。`);
     setIsDriving(false);
   }, [currentLevel]);
 
@@ -201,70 +181,84 @@ export default function App() {
       setGameState('success');
       setStreak(s => s + 1);
       setScore(s => s + 500);
-      setMessage(`使命必達！獲得額外連勝加分。`);
+      setMessage(`使命必達！獲得額外獎金。`);
     } else {
       setGameState('failed');
       setStreak(0);
       if (!reachedExit) setMessage(`路徑中斷了，沒辦法抵達目的地。`);
-      else setMessage(`雖然抵達，但遺漏了重要的客人（目標 ${currentLevel.targetCustomerCount} 位）。`);
+      else setMessage(`雖然抵達，但遺漏了重要的客人。`);
     }
     setIsDriving(false);
+  };
+
+  const nextLevel = () => {
+    if (levelId < LEVELS.length) {
+      setLevelId(prev => prev + 1);
+    } else {
+      // End of all levels, maybe restart from 1 or show credits
+      setLevelId(1);
+    }
   };
 
   const cellSize = useMemo(() => {
     if (!currentLevel) return 60;
     const windowWidth = window.innerWidth;
-    const maxGridWidth = windowWidth - 120; // More room for labels
+    const maxGridWidth = windowWidth - 100;
     return Math.min(60, maxGridWidth / currentLevel.gridSize.cols);
   }, [currentLevel]);
+
+  const progressPercentage = (levelId / LEVELS.length) * 100;
 
   return (
     <div className="relative flex flex-col h-screen-safe max-w-md mx-auto bg-[#fdfbf7] text-[#5d5c58] overflow-hidden">
       {gameState === 'success' && <Confetti />}
       
-      <header className="px-6 py-4 flex flex-col gap-2 shrink-0 bg-white/50 border-b border-[#f0ece2] z-20">
+      <header className="px-6 py-4 flex flex-col gap-3 shrink-0 bg-white/50 border-b border-[#f0ece2] z-20">
         <div className="flex justify-between items-center">
-          <h1 className="text-xs tracking-widest font-bold text-[#a78b75]">城市外送計畫</h1>
-          <div className="flex gap-2">
-            {(Object.values(Difficulty) as Difficulty[]).map(d => (
-              <button
-                key={d}
-                onClick={() => !isDriving && setDifficulty(d)}
-                className={`text-[10px] px-2 py-0.5 rounded font-bold transition-all ${
-                  difficulty === d 
-                    ? 'bg-[#a78b75] text-white shadow-sm' 
-                    : 'bg-[#f0ece2] text-[#a78b75] hover:bg-[#e6dfd1]'
-                }`}
-              >
-                {d === Difficulty.EASY ? '簡單' : d === Difficulty.MEDIUM ? '普通' : '困難'}
-              </button>
-            ))}
+          <div className="flex flex-col">
+            <h1 className="text-xs tracking-widest font-bold text-[#a78b75]">城市外送計畫</h1>
+            <span className="text-[10px] text-gray-400 font-medium">Chapter: {currentLevel.difficulty}</span>
+          </div>
+          <div className="bg-[#a78b75] text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
+             LEVEL {levelId} / {LEVELS.length}
           </div>
         </div>
+
+        {/* Global Progress Bar */}
+        <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-[#7d8570] transition-all duration-1000 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+
         <div className="flex justify-between items-baseline">
           <div className="flex flex-col">
             <span className="text-2xl font-black text-[#5d5c58]">{score.toLocaleString()}</span>
-            <span className="text-[9px] text-[#9ca3af] uppercase tracking-tighter">總積分</span>
+            <span className="text-[9px] text-[#9ca3af] uppercase tracking-tighter font-bold">Total Earnings</span>
           </div>
           <div className="flex flex-col items-end">
-             <span className="bg-[#a78b75] text-white text-[10px] px-2 py-0.5 rounded font-bold mb-1">
-               {difficulty} 關卡 {levelIndex + 1}
-             </span>
-             <span className="text-[10px] font-medium text-[#7d8570]">連勝：{streak}</span>
+             <div className="flex items-center gap-1 mb-1">
+                <span className="text-xs">🔥</span>
+                <span className="text-[10px] font-bold text-[#7d8570]">{streak} STREAK</span>
+             </div>
+             <div className="text-[9px] font-bold py-0.5 px-2 rounded border border-[#f0ece2] bg-white text-[#888]">
+               {currentLevel.gridSize.cols}x{currentLevel.gridSize.rows} MAP
+             </div>
           </div>
         </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 relative">
-        <div className="flex items-center gap-1">
-          {/* Start Point Visualization */}
-          <div className="flex flex-col gap-0" style={{ height: `${currentLevel.gridSize.rows * cellSize}px` }}>
+        <div className="flex items-center gap-1 transition-all duration-500">
+          {/* Start Point */}
+          <div className="flex flex-col" style={{ height: `${currentLevel.gridSize.rows * cellSize}px` }}>
             {Array.from({ length: currentLevel.gridSize.rows }).map((_, r) => (
               <div key={r} className="flex items-center justify-end pr-1" style={{ height: `${cellSize}px`, width: '40px' }}>
                 {r === currentLevel.startRow && (
                   <div className="flex items-center gap-1 animate-pulse">
-                    <span className="text-lg">🛵</span>
-                    <div className="w-4 h-3 bg-[#a78b75] rounded-r-full shadow-sm"></div>
+                    <span className="text-lg drop-shadow-sm">🛵</span>
+                    <div className="w-4 h-4 bg-[#a78b75] rounded-r-lg shadow-sm"></div>
                   </div>
                 )}
               </div>
@@ -276,7 +270,7 @@ export default function App() {
             className="bg-white p-2 rounded-2xl border-2 border-[#f0ece2] relative shadow-xl transition-all z-10"
             style={{ 
               display: 'grid', 
-              gridTemplateColumns: `repeat(${currentLevel?.gridSize.cols || 4}, 1fr)`,
+              gridTemplateColumns: `repeat(${currentLevel?.gridSize.cols}, 1fr)`,
               width: 'fit-content'
             }}
           >
@@ -312,14 +306,14 @@ export default function App() {
             ))}
           </div>
 
-          {/* Exit Point Visualization */}
-          <div className="flex flex-col gap-0" style={{ height: `${currentLevel.gridSize.rows * cellSize}px` }}>
+          {/* Exit Point */}
+          <div className="flex flex-col" style={{ height: `${currentLevel.gridSize.rows * cellSize}px` }}>
             {Array.from({ length: currentLevel.gridSize.rows }).map((_, r) => (
               <div key={r} className="flex items-center justify-start pl-1" style={{ height: `${cellSize}px`, width: '40px' }}>
                 {r === currentLevel.exitRow && (
                   <div className="flex items-center gap-1">
-                    <div className={`w-4 h-3 rounded-l-full shadow-sm transition-colors ${reachableFromStart.has(`${currentLevel.gridSize.cols - 1}-${currentLevel.exitRow}`) ? 'bg-[#7d8570]' : 'bg-gray-200'}`}></div>
-                    <span className="text-lg">☕</span>
+                    <div className={`w-4 h-4 rounded-l-lg shadow-sm transition-colors ${reachableFromStart.has(`${currentLevel.gridSize.cols - 1}-${currentLevel.exitRow}`) ? 'bg-[#7d8570]' : 'bg-gray-200'}`}></div>
+                    <span className="text-lg drop-shadow-sm">☕</span>
                   </div>
                 )}
               </div>
@@ -327,8 +321,8 @@ export default function App() {
           </div>
         </div>
 
-        <div className="mt-8 text-center w-full px-6 min-h-[48px]">
-           <p className="text-xs text-[#888] font-medium leading-relaxed">{message}</p>
+        <div className="mt-8 text-center w-full px-8 min-h-[48px]">
+           <p className="text-[11px] text-[#888] font-medium leading-relaxed italic">"{message}"</p>
         </div>
       </main>
 
@@ -338,36 +332,36 @@ export default function App() {
             <button 
               onClick={checkDelivery}
               disabled={isDriving}
-              className={`w-full py-4 text-white tracking-[0.4em] font-bold text-sm rounded-2xl shadow-lg transition-all active:scale-95 ${
-                isDriving ? 'bg-[#bbb] opacity-50' : 'bg-[#a78b75] hover:bg-[#8f7562]'
+              className={`w-full py-4 text-white tracking-[0.4em] font-bold text-sm rounded-2xl shadow-lg transition-all btn-active ${
+                isDriving ? 'bg-[#bbb] opacity-50 cursor-not-allowed' : 'bg-[#a78b75] hover:bg-[#8f7562]'
               }`}
             >
-              確認路徑 🛵
+              GO DELIVERY 🛵
             </button>
-            <button onClick={() => resetLevel()} className="text-[10px] text-[#bbb] hover:text-[#a78b75] font-bold tracking-widest uppercase">
-              重新排路
+            <button onClick={() => resetLevel()} className="text-[10px] text-[#bbb] hover:text-[#a78b75] font-black tracking-widest uppercase py-1">
+              REFRESH MAP
             </button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-             <div className="text-center mb-2">
-                <span className={`text-2xl font-black ${gameState === 'success' ? 'text-[#7d8570]' : 'text-[#a78b75]'}`}>
-                  {gameState === 'success' ? '配送成功！' : '配送失敗'}
+             <div className="text-center mb-1">
+                <span className={`text-2xl font-black tracking-widest ${gameState === 'success' ? 'text-[#7d8570]' : 'text-[#a78b75]'}`}>
+                  {gameState === 'success' ? 'DELIVERED!' : 'FAILED...'}
                 </span>
              </div>
              {gameState === 'success' ? (
                 <button 
-                  onClick={() => setLevelIndex(prev => (prev + 1) % filteredLevels.length)}
-                  className="w-full py-4 bg-[#7d8570] text-white tracking-[0.3em] font-bold text-sm rounded-2xl shadow-lg active:scale-95"
+                  onClick={nextLevel}
+                  className="w-full py-4 bg-[#7d8570] text-white tracking-[0.3em] font-bold text-sm rounded-2xl shadow-lg btn-active"
                 >
-                  前往下一關 ➔
+                  NEXT ORDER ➔
                 </button>
              ) : (
                 <button 
                   onClick={() => resetLevel()}
-                  className="w-full py-4 bg-[#a78b75] text-white tracking-[0.3em] font-bold text-sm rounded-2xl shadow-lg active:scale-95"
+                  className="w-full py-4 bg-[#a78b75] text-white tracking-[0.3em] font-bold text-sm rounded-2xl shadow-lg btn-active"
                 >
-                  重新嘗試
+                  TRY AGAIN
                 </button>
              )}
           </div>

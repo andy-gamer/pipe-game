@@ -1,6 +1,6 @@
 
-import { PipeType, CellData } from '../types';
-import { PIPE_OPENINGS } from '../constants';
+import { PipeType, CellData } from '../types.ts';
+import { PIPE_OPENINGS } from '../constants.ts';
 
 export const getEffectiveOpenings = (type: PipeType, rotation: number): number[] => {
   const base = PIPE_OPENINGS[type] || [];

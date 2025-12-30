@@ -1,77 +1,138 @@
 
-import { PipeType, LevelData, CustomerType, Difficulty } from './types';
+import { PipeType, LevelData, CustomerType, Difficulty } from './types.ts';
 
 export const LEVELS: LevelData[] = [
+  // --- EASY CHAPTER: Learning the ropes (4x4) ---
   {
     id: 1,
     difficulty: Difficulty.EASY,
     gridSize: { rows: 4, cols: 4 },
     startRow: 0,
-    exitRow: 3,
-    customers: [
-      { x: 1, y: 0, type: CustomerType.NORMAL },
-      { x: 2, y: 3, type: CustomerType.VIP }
-    ],
+    exitRow: 0,
+    customers: [{ x: 1, y: 0, type: CustomerType.NORMAL }],
     targetCustomerCount: 1,
-    initialPipes: [
-      { x: 0, y: 0, type: PipeType.CORNER, rotation: 1 },
-      { x: 3, y: 3, type: PipeType.CORNER, rotation: 3 },
-    ]
+    initialPipes: [{ x: 2, y: 0, type: PipeType.STRAIGHT, rotation: 1 }]
   },
   {
     id: 2,
     difficulty: Difficulty.EASY,
     gridSize: { rows: 4, cols: 4 },
     startRow: 1,
-    exitRow: 1,
-    customers: [
-      { x: 1, y: 1, type: CustomerType.NORMAL },
-      { x: 2, y: 1, type: CustomerType.NORMAL }
-    ],
+    exitRow: 2,
+    customers: [{ x: 1, y: 1, type: CustomerType.NORMAL }, { x: 2, y: 2, type: CustomerType.NORMAL }],
     targetCustomerCount: 1,
     initialPipes: []
   },
   {
     id: 3,
+    difficulty: Difficulty.EASY,
+    gridSize: { rows: 4, cols: 4 },
+    startRow: 3,
+    exitRow: 0,
+    customers: [{ x: 1, y: 3, type: CustomerType.VIP }],
+    targetCustomerCount: 1,
+    initialPipes: []
+  },
+
+  // --- MEDIUM CHAPTER: Adding Complexity (5x5) ---
+  {
+    id: 4,
     difficulty: Difficulty.MEDIUM,
     gridSize: { rows: 5, cols: 5 },
     startRow: 2,
     exitRow: 2,
     customers: [
       { x: 1, y: 1, type: CustomerType.NORMAL },
-      { x: 2, y: 2, type: CustomerType.VIP },
       { x: 3, y: 3, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 2,
-    initialPipes: [
-      { x: 2, y: 2, type: PipeType.CROSS, rotation: 0 },
-    ]
+    initialPipes: [{ x: 2, y: 2, type: PipeType.CROSS, rotation: 0 }]
   },
   {
-    id: 4,
+    id: 5,
     difficulty: Difficulty.MEDIUM,
     gridSize: { rows: 5, cols: 5 },
     startRow: 0,
     exitRow: 4,
     customers: [
-      { x: 0, y: 4, type: CustomerType.VIP },
-      { x: 4, y: 0, type: CustomerType.NORMAL }
+      { x: 2, y: 1, type: CustomerType.VIP },
+      { x: 4, y: 4, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 2,
     initialPipes: []
   },
   {
-    id: 5,
+    id: 6,
+    difficulty: Difficulty.MEDIUM,
+    gridSize: { rows: 5, cols: 5 },
+    startRow: 1,
+    exitRow: 3,
+    customers: [
+      { x: 0, y: 1, type: CustomerType.NORMAL },
+      { x: 2, y: 2, type: CustomerType.VIP },
+      { x: 4, y: 3, type: CustomerType.NORMAL }
+    ],
+    targetCustomerCount: 2,
+    initialPipes: []
+  },
+
+  // --- HARD CHAPTER: Master Planner (6x6+) ---
+  {
+    id: 7,
     difficulty: Difficulty.HARD,
     gridSize: { rows: 6, cols: 6 },
-    startRow: 1,
-    exitRow: 4,
+    startRow: 0,
+    exitRow: 5,
     customers: [
-      { x: 2, y: 2, type: CustomerType.VIP },
+      { x: 1, y: 1, type: CustomerType.NORMAL },
       { x: 3, y: 3, type: CustomerType.VIP },
-      { x: 4, y: 1, type: CustomerType.NORMAL }
+      { x: 5, y: 5, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 3,
+    initialPipes: []
+  },
+  {
+    id: 8,
+    difficulty: Difficulty.HARD,
+    gridSize: { rows: 6, cols: 6 },
+    startRow: 3,
+    exitRow: 3,
+    customers: [
+      { x: 0, y: 3, type: CustomerType.NORMAL },
+      { x: 2, y: 0, type: CustomerType.VIP },
+      { x: 2, y: 5, type: CustomerType.VIP },
+      { x: 5, y: 3, type: CustomerType.NORMAL }
+    ],
+    targetCustomerCount: 4,
+    initialPipes: []
+  },
+  {
+    id: 9,
+    difficulty: Difficulty.HARD,
+    gridSize: { rows: 7, cols: 7 },
+    startRow: 0,
+    exitRow: 6,
+    customers: [
+      { x: 3, y: 3, type: CustomerType.VIP },
+      { x: 1, y: 1, type: CustomerType.NORMAL },
+      { x: 5, y: 5, type: CustomerType.NORMAL }
+    ],
+    targetCustomerCount: 3,
+    initialPipes: [{ x: 3, y: 3, type: PipeType.CROSS, rotation: 0 }]
+  },
+  {
+    id: 10,
+    difficulty: Difficulty.HARD,
+    gridSize: { rows: 7, cols: 7 },
+    startRow: 3,
+    exitRow: 3,
+    customers: [
+      { x: 1, y: 1, type: CustomerType.VIP },
+      { x: 1, y: 5, type: CustomerType.VIP },
+      { x: 5, y: 1, type: CustomerType.VIP },
+      { x: 5, y: 5, type: CustomerType.VIP }
+    ],
+    targetCustomerCount: 4,
     initialPipes: []
   }
 ];

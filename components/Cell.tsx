@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PipeType, CellData, CustomerType } from '../types';
+import { PipeType, CellData, CustomerType } from '../types.ts';
 
 interface CellProps {
   cell: CellData;
