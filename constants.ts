@@ -2,7 +2,7 @@
 import { PipeType, LevelData, CustomerType, Difficulty } from './types.ts';
 
 export const LEVELS: LevelData[] = [
-  // --- EASY CHAPTER: Learning the ropes (4x4) ---
+  // --- CHAPTER 1: 小鎮啟程 (4x4) ---
   {
     id: 1,
     difficulty: Difficulty.EASY,
@@ -11,7 +11,7 @@ export const LEVELS: LevelData[] = [
     exitRow: 0,
     customers: [{ x: 1, y: 0, type: CustomerType.NORMAL }],
     targetCustomerCount: 1,
-    initialPipes: [{ x: 2, y: 0, type: PipeType.STRAIGHT, rotation: 1 }]
+    initialPipes: []
   },
   {
     id: 2,
@@ -19,7 +19,7 @@ export const LEVELS: LevelData[] = [
     gridSize: { rows: 4, cols: 4 },
     startRow: 1,
     exitRow: 2,
-    customers: [{ x: 1, y: 1, type: CustomerType.NORMAL }, { x: 2, y: 2, type: CustomerType.NORMAL }],
+    customers: [{ x: 2, y: 1, type: CustomerType.NORMAL }],
     targetCustomerCount: 1,
     initialPipes: []
   },
@@ -29,54 +29,54 @@ export const LEVELS: LevelData[] = [
     gridSize: { rows: 4, cols: 4 },
     startRow: 3,
     exitRow: 0,
-    customers: [{ x: 1, y: 3, type: CustomerType.VIP }],
-    targetCustomerCount: 1,
+    customers: [{ x: 1, y: 3, type: CustomerType.VIP }, { x: 3, y: 1, type: CustomerType.NORMAL }],
+    targetCustomerCount: 2,
     initialPipes: []
   },
 
-  // --- MEDIUM CHAPTER: Adding Complexity (5x5) ---
+  // --- CHAPTER 2: 社區配送 (5x5) ---
   {
     id: 4,
-    difficulty: Difficulty.MEDIUM,
-    gridSize: { rows: 5, cols: 5 },
-    startRow: 2,
-    exitRow: 2,
-    customers: [
-      { x: 1, y: 1, type: CustomerType.NORMAL },
-      { x: 3, y: 3, type: CustomerType.NORMAL }
-    ],
-    targetCustomerCount: 2,
-    initialPipes: [{ x: 2, y: 2, type: PipeType.CROSS, rotation: 0 }]
-  },
-  {
-    id: 5,
     difficulty: Difficulty.MEDIUM,
     gridSize: { rows: 5, cols: 5 },
     startRow: 0,
     exitRow: 4,
     customers: [
-      { x: 2, y: 1, type: CustomerType.VIP },
-      { x: 4, y: 4, type: CustomerType.NORMAL }
+      { x: 2, y: 0, type: CustomerType.NORMAL },
+      { x: 2, y: 4, type: CustomerType.VIP }
     ],
     targetCustomerCount: 2,
+    initialPipes: []
+  },
+  {
+    id: 5,
+    difficulty: Difficulty.MEDIUM,
+    gridSize: { rows: 5, cols: 5 },
+    startRow: 2,
+    exitRow: 2,
+    customers: [
+      { x: 0, y: 2, type: CustomerType.NORMAL },
+      { x: 4, y: 2, type: CustomerType.NORMAL },
+      { x: 2, y: 0, type: CustomerType.VIP }
+    ],
+    targetCustomerCount: 3,
     initialPipes: []
   },
   {
     id: 6,
     difficulty: Difficulty.MEDIUM,
     gridSize: { rows: 5, cols: 5 },
-    startRow: 1,
-    exitRow: 3,
+    startRow: 4,
+    exitRow: 0,
     customers: [
-      { x: 0, y: 1, type: CustomerType.NORMAL },
-      { x: 2, y: 2, type: CustomerType.VIP },
-      { x: 4, y: 3, type: CustomerType.NORMAL }
+      { x: 1, y: 1, type: CustomerType.NORMAL },
+      { x: 3, y: 3, type: CustomerType.VIP }
     ],
     targetCustomerCount: 2,
     initialPipes: []
   },
 
-  // --- HARD CHAPTER: Master Planner (6x6+) ---
+  // --- CHAPTER 3: 城市迷宮 (6x6) ---
   {
     id: 7,
     difficulty: Difficulty.HARD,
@@ -84,9 +84,9 @@ export const LEVELS: LevelData[] = [
     startRow: 0,
     exitRow: 5,
     customers: [
-      { x: 1, y: 1, type: CustomerType.NORMAL },
-      { x: 3, y: 3, type: CustomerType.VIP },
-      { x: 5, y: 5, type: CustomerType.NORMAL }
+      { x: 2, y: 0, type: CustomerType.NORMAL },
+      { x: 2, y: 5, type: CustomerType.VIP },
+      { x: 5, y: 0, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 3,
     initialPipes: []
@@ -98,10 +98,10 @@ export const LEVELS: LevelData[] = [
     startRow: 3,
     exitRow: 3,
     customers: [
-      { x: 0, y: 3, type: CustomerType.NORMAL },
-      { x: 2, y: 0, type: CustomerType.VIP },
-      { x: 2, y: 5, type: CustomerType.VIP },
-      { x: 5, y: 3, type: CustomerType.NORMAL }
+      { x: 0, y: 0, type: CustomerType.VIP },
+      { x: 5, y: 0, type: CustomerType.VIP },
+      { x: 0, y: 5, type: CustomerType.NORMAL },
+      { x: 5, y: 5, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 4,
     initialPipes: []
@@ -114,23 +114,23 @@ export const LEVELS: LevelData[] = [
     exitRow: 6,
     customers: [
       { x: 3, y: 3, type: CustomerType.VIP },
-      { x: 1, y: 1, type: CustomerType.NORMAL },
-      { x: 5, y: 5, type: CustomerType.NORMAL }
+      { x: 1, y: 5, type: CustomerType.NORMAL },
+      { x: 5, y: 1, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 3,
-    initialPipes: [{ x: 3, y: 3, type: PipeType.CROSS, rotation: 0 }]
+    initialPipes: []
   },
   {
     id: 10,
     difficulty: Difficulty.HARD,
     gridSize: { rows: 7, cols: 7 },
-    startRow: 3,
-    exitRow: 3,
+    startRow: 6,
+    exitRow: 0,
     customers: [
-      { x: 1, y: 1, type: CustomerType.VIP },
-      { x: 1, y: 5, type: CustomerType.VIP },
-      { x: 5, y: 1, type: CustomerType.VIP },
-      { x: 5, y: 5, type: CustomerType.VIP }
+      { x: 0, y: 0, type: CustomerType.VIP },
+      { x: 6, y: 6, type: CustomerType.VIP },
+      { x: 3, y: 0, type: CustomerType.NORMAL },
+      { x: 3, y: 6, type: CustomerType.NORMAL }
     ],
     targetCustomerCount: 4,
     initialPipes: []
@@ -140,7 +140,5 @@ export const LEVELS: LevelData[] = [
 export const PIPE_OPENINGS: Record<PipeType, number[]> = {
   [PipeType.STRAIGHT]: [0, 2], 
   [PipeType.CORNER]: [1, 2],   
-  [PipeType.TEE]: [1, 2, 3],    
-  [PipeType.CROSS]: [0, 1, 2, 3], 
   [PipeType.EMPTY]: [],
 };

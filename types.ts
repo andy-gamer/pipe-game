@@ -2,8 +2,6 @@
 export enum PipeType {
   STRAIGHT = 'STRAIGHT',
   CORNER = 'CORNER',
-  TEE = 'TEE',
-  CROSS = 'CROSS',
   EMPTY = 'EMPTY',
 }
 
@@ -35,8 +33,8 @@ export interface LevelData {
   id: number;
   difficulty: Difficulty;
   gridSize: { rows: number; cols: number };
-  startRow: number; // The row index where the scooter enters from the left
-  exitRow: number;  // The row index where the scooter exits to the right
+  startRow: number; 
+  exitRow: number;  
   customers: { x: number; y: number; type: CustomerType }[];
   initialPipes: { x: number; y: number; type: PipeType; rotation: number }[];
   targetCustomerCount: number;

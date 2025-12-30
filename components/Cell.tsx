@@ -26,10 +26,8 @@ const Cell: React.FC<CellProps> = ({
   isExitCell,
   isTutorialTarget 
 }) => {
-  // Define isVisited at the top level of the component so it's accessible in the return statement
   const isVisited = cell.isVisited;
 
-  // 取得當前旋轉後的開口方向
   const getOpenings = () => {
     const base = PIPE_OPENINGS[cell.type] || [];
     return base.map(dir => (dir + cell.rotation) % 4);
@@ -64,26 +62,11 @@ const Cell: React.FC<CellProps> = ({
       </React.Fragment>
     );
 
-    // SVG 內部座標為 100x100
     switch (cell.type) {
       case PipeType.STRAIGHT:
         return renderSegment('line', { x1: 50, y1: 0, x2: 50, y2: 100 });
       case PipeType.CORNER:
         return renderSegment('path', { d: "M 50 100 Q 50 50 100 50", fill: "transparent" });
-      case PipeType.TEE:
-        return (
-          <>
-            {renderSegment('line', { x1: 0, y1: 50, x2: 100, y2: 50 })}
-            {renderSegment('line', { x1: 50, y1: 50, x2: 50, y2: 100 })}
-          </>
-        );
-      case PipeType.CROSS:
-        return (
-          <>
-            {renderSegment('line', { x1: 0, y1: 50, x2: 100, y2: 50 })}
-            {renderSegment('line', { x1: 50, y1: 0, x2: 50, y2: 100 })}
-          </>
-        );
       default:
         return null;
     }
@@ -103,7 +86,6 @@ const Cell: React.FC<CellProps> = ({
       style={{ width: `${gridSize}px`, height: `${gridSize}px` }}
       onClick={() => !isDriving && onRotate(cell.id)}
     >
-      {/* 視覺輔助：連接點 (Interface Dots) */}
       <div className="absolute inset-0 pointer-events-none opacity-40">
         {openings.includes(0) && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
         {openings.includes(1) && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
@@ -111,11 +93,7 @@ const Cell: React.FC<CellProps> = ({
         {openings.includes(3) && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
       </div>
 
-      {isTutorialTarget && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-2xl animate-bounce pointer-events-none drop-shadow-lg">
-          👇
-        </div>
-      )}
+      {isTutorialTarget && <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-2xl animate-bounce pointer-events-none drop-shadow-lg">👇</div>}
 
       {isEntryCell && <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 opacity-40 pointer-events-none text-[8px] font-bold text-[#a78b75]">▶</div>}
       {isExitCell && <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 opacity-40 pointer-events-none text-[8px] font-bold text-[#a78b75]">▶</div>}
@@ -142,10 +120,6 @@ const Cell: React.FC<CellProps> = ({
               : 'bg-white border-[#e5e7eb]'}`}>
              {isVIP && <span className="absolute -top-1.5 -right-1.5 text-[10px] animate-pulse">⭐</span>}
              <span className="text-sm leading-none">{isVIP ? '👑' : '🙋'}</span>
-             <span className={`absolute -bottom-2.5 px-1.5 rounded-full text-[8px] font-black tracking-tighter text-white shadow-md border border-white/20
-               ${isVIP ? 'bg-[#d97706]' : 'bg-[#9ca3af]'}`}>
-               {isVIP ? 'VIP' : '+300'}
-             </span>
           </div>
         </div>
       )}
