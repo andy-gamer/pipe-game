@@ -13,67 +13,59 @@ interface CellProps {
 
 const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurrentScooterPos, onRotate, gridSize }) => {
   const renderPipe = () => {
-    // 沒連結到的地方是灰色，連結到的是品牌色
+    // Standard color for inactive pipes, warm brand color for active ones
     const pipeColor = isConnectedToStart ? 'stroke-[#a78b75]' : 'stroke-[#d1d5db]';
-    const strokeWidth = 14;
+    const glowColor = isConnectedToStart ? 'stroke-[#a78b75]/20' : 'stroke-transparent';
+    const strokeWidth = 16;
+    const glowWidth = 24; // Slightly wider for the glow effect
+
+    const renderSegment = (Component: any, props: any) => (
+      <>
+        {/* Subtle background glow segment */}
+        <Component {...props} className={`${glowColor} transition-all duration-500`} strokeWidth={glowWidth} strokeLinecap="round" />
+        {/* Main pipe segment */}
+        <Component {...props} className={`${pipeColor} transition-all duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
+      </>
+    );
 
     switch (cell.type) {
       case PipeType.STRAIGHT:
-        return (
-          <line x1="50" y1="0" x2="50" y2="100" className={`${pipeColor} transition-colors duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
-        );
+        return renderSegment('line', { x1: 50, y1: 0, x2: 50, y2: 100 });
       case PipeType.CORNER:
-        return (
-          <path d="M 50 100 Q 50 50 100 50" fill="transparent" className={`${pipeColor} transition-colors duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
-        );
+        return renderSegment('path', { d: "M 50 100 Q 50 50 100 50", fill: "transparent" });
       case PipeType.TEE:
         return (
           <>
-            <line x1="0" y1="50" x2="100" y2="50" className={`${pipeColor} transition-colors duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
-            <line x1="50" y1="50" x2="50" y2="100" className={`${pipeColor} transition-colors duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
+            {renderSegment('line', { x1: 0, y1: 50, x2: 100, y2: 50 })}
+            {renderSegment('line', { x1: 50, y1: 50, x2: 50, y2: 100 })}
           </>
         );
       case PipeType.CROSS:
         return (
           <>
-            <line x1="0" y1="50" x2="100" y2="50" className={`${pipeColor} transition-colors duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
-            <line x1="50" y1="0" x2="50" y2="100" className={`${pipeColor} transition-colors duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
+            {renderSegment('line', { x1: 0, y1: 50, x2: 100, y2: 50 })}
+            {renderSegment('line', { x1: 50, y1: 0, x2: 50, y2: 100 })}
           </>
-        );
-      case PipeType.START: 
-        return (
-          <g>
-             <rect x="10" y="30" width="40" height="40" rx="8" fill="#a78b75" />
-             <line x1="50" y1="50" x2="100" y2="50" className="stroke-[#a78b75]" strokeWidth={strokeWidth} strokeLinecap="round" />
-             <text x="30" y="58" fontSize="22" textAnchor="middle">🛵</text>
-          </g>
-        );
-      case PipeType.EXIT: 
-        return (
-          <g>
-            <rect x="40" y="20" width="50" height="60" rx="4" fill="#7d8570" />
-            <line x1="0" y1="50" x2="40" y2="50" className={isConnectedToStart ? "stroke-[#7d8570]" : "stroke-[#d1d5db]"} strokeWidth={strokeWidth} strokeLinecap="round" />
-            <text x="65" y="58" fontSize="20" textAnchor="middle">☕</text>
-          </g>
         );
       default:
         return null;
     }
   };
 
-  const isInteractive = cell.type !== PipeType.START && cell.type !== PipeType.EXIT;
+  const isVIP = cell.customerType === CustomerType.VIP;
 
   return (
     <div 
-      className={`relative flex items-center justify-center transition-all duration-200 rounded-sm
-        ${isInteractive ? 'cursor-pointer hover:bg-[#faf6f0] active:scale-95' : ''}
+      className={`relative flex items-center justify-center transition-all duration-200 rounded-sm overflow-visible
+        cursor-pointer hover:bg-[#faf6f0] active:scale-95
+        ${isConnectedToStart ? 'z-10' : 'z-0'}
       `}
       style={{ width: `${gridSize}px`, height: `${gridSize}px` }}
-      onClick={() => isInteractive && !isDriving && onRotate(cell.id)}
+      onClick={() => !isDriving && onRotate(cell.id)}
     >
       <svg 
         viewBox="0 0 100 100" 
-        className="w-full h-full transform transition-transform duration-300"
+        className={`w-full h-full transform transition-transform duration-300 ${isConnectedToStart ? 'drop-shadow-[0_0_2px_rgba(167,139,117,0.3)]' : ''}`}
         style={{ transform: `rotate(${cell.rotation * 90}deg)` }}
       >
         {renderPipe()}
@@ -81,19 +73,23 @@ const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurr
       
       {cell.hasCustomer && !cell.isVisited && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className={`relative rounded-full w-8 h-8 flex flex-col items-center justify-center shadow-md border-2 
-            ${cell.customerType === CustomerType.VIP ? 'bg-[#fef3c7] border-[#fbbf24]' : 'bg-white border-[#e5e7eb]'}`}>
-             <span className="text-sm leading-none">🙋</span>
-             <span className={`absolute -bottom-2 px-1 rounded-sm text-[7px] font-black tracking-tighter text-white shadow-sm
-               ${cell.customerType === CustomerType.VIP ? 'bg-[#fbbf24]' : 'bg-[#9ca3af]'}`}>
-               {cell.customerType === CustomerType.VIP ? 'VIP' : '+300'}
+          <div className={`relative rounded-full w-9 h-9 flex flex-col items-center justify-center shadow-lg border-2 transition-all
+            ${isVIP 
+              ? 'bg-gradient-to-br from-[#fef3c7] to-[#fbbf24] border-[#d97706] scale-110 ring-2 ring-[#fbbf24]/50' 
+              : 'bg-white border-[#e5e7eb]'}`}>
+             
+             {isVIP && <span className="absolute -top-1.5 -right-1.5 text-[10px] animate-pulse">⭐</span>}
+             <span className="text-sm leading-none">{isVIP ? '👑' : '🙋'}</span>
+             <span className={`absolute -bottom-2.5 px-1.5 rounded-full text-[8px] font-black tracking-tighter text-white shadow-md border border-white/20
+               ${isVIP ? 'bg-[#d97706]' : 'bg-[#9ca3af]'}`}>
+               {isVIP ? 'VIP' : '+300'}
              </span>
           </div>
         </div>
       )}
 
-      {isCurrentScooterPos && cell.type !== PipeType.START && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+      {isCurrentScooterPos && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
            <span className="text-xl drop-shadow-md">🛵</span>
         </div>
       )}

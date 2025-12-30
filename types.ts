@@ -1,11 +1,9 @@
 
 export enum PipeType {
-  STRAIGHT = 'STRAIGHT', // ┃ or ━
-  CORNER = 'CORNER',     // ┗, ┛, ┓, ┏
-  TEE = 'TEE',           // ┣, ┫, ┳, ┻
-  CROSS = 'CROSS',       // ╋ (十字路口)
-  START = 'START',
-  EXIT = 'EXIT',
+  STRAIGHT = 'STRAIGHT',
+  CORNER = 'CORNER',
+  TEE = 'TEE',
+  CROSS = 'CROSS',
   EMPTY = 'EMPTY',
 }
 
@@ -14,12 +12,18 @@ export enum CustomerType {
   VIP = 'VIP',
 }
 
-export type Direction = 0 | 1 | 2 | 3; // 0=北, 1=東, 2=南, 3=西
+export enum Difficulty {
+  EASY = 'EASY',
+  MEDIUM = 'MEDIUM',
+  HARD = 'HARD',
+}
+
+export type Direction = 0 | 1 | 2 | 3; // 0=North, 1=East, 2=South, 3=West
 
 export interface CellData {
   id: string;
   type: PipeType;
-  rotation: number; // 0, 1, 2, 3 (90度倍數)
+  rotation: number;
   hasCustomer: boolean;
   customerType?: CustomerType;
   isVisited?: boolean;
@@ -29,9 +33,10 @@ export interface CellData {
 
 export interface LevelData {
   id: number;
+  difficulty: Difficulty;
   gridSize: { rows: number; cols: number };
-  startPos: { x: number; y: number; rotation: number };
-  exitPos: { x: number; y: number; rotation: number };
+  startRow: number; // The row index where the scooter enters from the left
+  exitRow: number;  // The row index where the scooter exits to the right
   customers: { x: number; y: number; type: CustomerType }[];
   initialPipes: { x: number; y: number; type: PipeType; rotation: number }[];
   targetCustomerCount: number;
