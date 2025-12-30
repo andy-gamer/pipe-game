@@ -11,20 +11,49 @@ interface CellProps {
   gridSize: number;
   isEntryCell?: boolean;
   isExitCell?: boolean;
+  isTutorialTarget?: boolean;
 }
 
-const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurrentScooterPos, onRotate, gridSize, isEntryCell, isExitCell }) => {
+const Cell: React.FC<CellProps> = ({ 
+  cell, 
+  isConnectedToStart, 
+  isDriving, 
+  isCurrentScooterPos, 
+  onRotate, 
+  gridSize, 
+  isEntryCell, 
+  isExitCell,
+  isTutorialTarget 
+}) => {
   const renderPipe = () => {
-    const pipeColor = isConnectedToStart ? 'stroke-[#a78b75]' : 'stroke-[#d1d5db]';
-    const glowColor = isConnectedToStart ? 'stroke-[#a78b75]/20' : 'stroke-transparent';
+    const isVisited = cell.isVisited;
+    
+    let pipeColor = 'stroke-[#d1d5db]';
+    let glowColor = 'stroke-transparent';
+    
+    if (isConnectedToStart) {
+      pipeColor = 'stroke-[#a78b75]';
+      glowColor = 'stroke-[#a78b75]/20';
+    }
+    
+    if (isVisited) {
+      pipeColor = 'stroke-[#7d8570]';
+      glowColor = 'stroke-[#7d8570]/40';
+    }
+
+    if (isCurrentScooterPos) {
+      pipeColor = 'stroke-[#fbbf24]';
+      glowColor = 'stroke-[#fbbf24]/60';
+    }
+
     const strokeWidth = 16;
     const glowWidth = 24;
 
     const renderSegment = (Component: any, props: any) => (
-      <>
-        <Component {...props} className={`${glowColor} transition-all duration-500`} strokeWidth={glowWidth} strokeLinecap="round" />
+      <React.Fragment key={props.d || props.x1}>
+        <Component {...props} className={`${glowColor} transition-all duration-300`} strokeWidth={glowWidth} strokeLinecap="round" />
         <Component {...props} className={`${pipeColor} transition-all duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
-      </>
+      </React.Fragment>
     );
 
     switch (cell.type) {
@@ -58,25 +87,41 @@ const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurr
       className={`relative flex items-center justify-center transition-all duration-200 rounded-sm overflow-visible
         cursor-pointer hover:bg-[#faf6f0] active:scale-95
         ${isConnectedToStart ? 'z-10' : 'z-0'}
+        ${isCurrentScooterPos ? 'scale-110 z-30' : ''}
+        ${cell.isVisited && !isCurrentScooterPos ? 'bg-[#7d8570]/5' : ''}
+        ${isTutorialTarget ? 'ring-2 ring-inset ring-[#fbbf24] bg-[#fbbf24]/10 animate-pulse z-40' : ''}
       `}
       style={{ width: `${gridSize}px`, height: `${gridSize}px` }}
       onClick={() => !isDriving && onRotate(cell.id)}
     >
-      {/* Visual Indicator for Entry/Exit Requirements */}
+      {/* Tutorial Pointer */}
+      {isTutorialTarget && (
+        <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-2xl animate-bounce pointer-events-none drop-shadow-lg">
+          👇
+        </div>
+      )}
+
       {isEntryCell && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 opacity-20 pointer-events-none text-[8px] font-bold text-[#a78b75]">
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 opacity-40 pointer-events-none text-[8px] font-bold text-[#a78b75]">
           ▶
         </div>
       )}
       {isExitCell && (
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 opacity-20 pointer-events-none text-[8px] font-bold text-[#a78b75]">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 opacity-40 pointer-events-none text-[8px] font-bold text-[#a78b75]">
           ▶
         </div>
       )}
 
+      {isCurrentScooterPos && (
+        <div className="absolute inset-0 bg-yellow-400/20 rounded-full animate-ping scale-75 pointer-events-none" />
+      )}
+
       <svg 
         viewBox="0 0 100 100" 
-        className={`w-full h-full transform transition-transform duration-300 ${isConnectedToStart ? 'drop-shadow-[0_0_2px_rgba(167,139,117,0.3)]' : ''}`}
+        className={`w-full h-full transform transition-all duration-300 
+          ${isConnectedToStart ? 'drop-shadow-[0_0_2px_rgba(167,139,117,0.3)]' : ''}
+          ${isCurrentScooterPos ? 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : ''}
+        `}
         style={{ transform: `rotate(${cell.rotation * 90}deg)` }}
       >
         {renderPipe()}
@@ -100,8 +145,14 @@ const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurr
       )}
 
       {isCurrentScooterPos && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-           <span className="text-xl drop-shadow-md">🛵</span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-bounce">
+           <span className="text-2xl drop-shadow-md">🛵</span>
+        </div>
+      )}
+
+      {cell.isVisited && !isCurrentScooterPos && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+          <div className="w-1 h-1 bg-[#7d8570] rounded-full" />
         </div>
       )}
     </div>
