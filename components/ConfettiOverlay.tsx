@@ -6,10 +6,10 @@ const ConfettiOverlay: React.FC = () => {
     return Array.from({ length: 40 }).map((_, i) => ({
       id: i,
       left: Math.random() * 100,
-      color: ['#d4a373', '#7d8570', '#fbbf24', '#faedcd', '#ccd5ae'][Math.floor(Math.random() * 5)],
+      color: ['#fbcfe8', '#fce7f3', '#fdf2f8', '#ffffff', '#fb7185'][Math.floor(Math.random() * 5)],
       delay: Math.random() * 0.5,
-      duration: 2 + Math.random() * 1.5,
-      size: 6 + Math.random() * 8
+      duration: 3 + Math.random() * 2,
+      size: 4 + Math.random() * 6
     }));
   }, []);
 
@@ -22,8 +22,8 @@ const ConfettiOverlay: React.FC = () => {
             animationDelay: `${p.delay}s`,
             animationDuration: `${p.duration}s`,
             width: `${p.size}px`,
-            height: `${p.size}px`,
-            borderRadius: p.id % 2 === 0 ? '50%' : '2px'
+            height: `${p.size * 0.8}px`,
+            borderRadius: '100% 10% 100% 10%' // 花瓣形狀
           }}
         />
       ))}

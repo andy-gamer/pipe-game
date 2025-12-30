@@ -6,8 +6,9 @@ export enum PipeType {
 }
 
 export enum CustomerType {
-  NORMAL = 'NORMAL',
-  VIP = 'VIP',
+  BOUQUET = 'BOUQUET',
+  ROMANCE = 'ROMANCE',
+  WEDDING = 'WEDDING',
 }
 
 export enum Difficulty {
@@ -22,6 +23,8 @@ export interface CellData {
   id: string;
   type: PipeType;
   rotation: number;
+  solutionRotation?: number; 
+  isHinted?: boolean;        
   hasCustomer: boolean;
   customerType?: CustomerType;
   isVisited?: boolean;
