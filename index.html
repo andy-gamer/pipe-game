@@ -16,16 +16,17 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #fdfbf7;
-            color: #5d5c58;
-            /* 防止行動端雙擊縮放與長按菜單 */
+            background-color: #f3f4f1;
+            color: #4a4a4a;
             touch-action: manipulation;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
+            /* 鵝卵石地磚紋理 */
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
         }
         
-        /* 解決行動端 100vh 包含工具列的問題 */
         .h-screen-safe {
             height: 100vh;
             height: 100dvh;
@@ -42,9 +43,12 @@
             animation: confetti-fall 3s linear forwards;
         }
 
-        /* 按鈕點擊縮放回饋 */
         .btn-active:active {
-            transform: scale(0.96);
+            transform: translateY(2px) scale(0.98);
+        }
+
+        .street-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
         /* 隱藏捲軸 */
@@ -64,7 +68,6 @@
 </head>
 <body>
     <div id="root"></div>
-    <!-- 核心修復：加入入口模組 -->
     <script type="module" src="index.tsx"></script>
 </body>
 </html>

@@ -23,38 +23,49 @@ const Header: React.FC<HeaderProps> = ({
   gridCols,
   gridRows
 }) => {
+  const diffColors = {
+    [Difficulty.EASY]: 'bg-green-100 text-green-700',
+    [Difficulty.MEDIUM]: 'bg-blue-100 text-blue-700',
+    [Difficulty.HARD]: 'bg-rose-100 text-rose-700',
+  };
+
   return (
-    <header className="px-6 py-4 flex flex-col gap-3 shrink-0 bg-white/50 border-b border-[#f0ece2] z-20">
+    <header className="px-6 pt-8 pb-4 flex flex-col gap-4 shrink-0 bg-white/70 backdrop-blur-md border-b border-gray-100 z-20">
       <div className="flex justify-between items-center">
         <div className="flex flex-col">
-          <h1 className="text-xs tracking-widest font-bold text-[#a78b75]">城市外送計畫</h1>
-          <span className="text-[10px] text-gray-400 font-medium">Chapter: {difficulty}</span>
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm font-black text-gray-800 tracking-tight">小城外送日誌</h1>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase ${diffColors[difficulty]}`}>
+              {difficulty}
+            </span>
+          </div>
+          <span className="text-[10px] text-gray-400 font-medium">區域地圖加載完成</span>
         </div>
-        <div className="bg-[#a78b75] text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
-           LEVEL {levelId} / {totalLevels}
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1">
+             🔥 連送中 {streak}
+          </span>
+          <span className="text-xs font-black text-gray-700">LEVEL {levelId}/{totalLevels}</span>
         </div>
       </div>
 
-      <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+      <div className="relative w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div 
-          className="h-full bg-[#7d8570] transition-all duration-1000 ease-out"
+          className="h-full bg-amber-400 transition-all duration-1000 ease-out"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>
 
-      <div className="flex justify-between items-baseline">
+      <div className="flex justify-between items-end">
         <div className="flex flex-col">
-          <span className="text-2xl font-black text-[#5d5c58]">{score.toLocaleString()}</span>
-          <span className="text-[9px] text-[#9ca3af] uppercase tracking-tighter font-bold">Total Earnings</span>
+          <span className="text-3xl font-black text-gray-800 leading-none">
+            ${score.toLocaleString()}
+          </span>
+          <span className="text-[9px] text-gray-400 uppercase font-black mt-1">累積小費收益</span>
         </div>
-        <div className="flex flex-col items-end">
-           <div className="flex items-center gap-1 mb-1">
-              <span className="text-xs">🔥</span>
-              <span className="text-[10px] font-bold text-[#7d8570]">{streak} STREAK</span>
-           </div>
-           <div className="text-[9px] font-bold py-0.5 px-2 rounded border border-[#f0ece2] bg-white text-[#888]">
-             {gridCols}x{gridRows} MAP
-           </div>
+        <div className="bg-gray-800 text-white px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-lg scale-90 origin-right">
+           <span className="text-[10px] font-bold">地圖尺寸</span>
+           <span className="text-xs font-black text-amber-400">{gridCols}x{gridRows}</span>
         </div>
       </div>
     </header>

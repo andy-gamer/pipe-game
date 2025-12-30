@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { PipeType, CellData, CustomerType } from '../types.ts';
-import { PIPE_OPENINGS } from '../constants.ts';
 
 interface CellProps {
   cell: CellData;
@@ -28,105 +27,90 @@ const Cell: React.FC<CellProps> = ({
 }) => {
   const isVisited = cell.isVisited;
 
-  const getOpenings = () => {
-    const base = PIPE_OPENINGS[cell.type] || [];
-    return base.map(dir => (dir + cell.rotation) % 4);
-  };
-
-  const openings = getOpenings();
-
-  const renderPipe = () => {
-    let pipeColor = 'stroke-[#d1d5db]';
-    let glowColor = 'stroke-transparent';
+  const renderRoad = () => {
+    // 街道顏色：灰色(預設)、深灰(接通)、暖黃(正在行駛)
+    let roadColor = isConnectedToStart ? '#4a5568' : '#cbd5e0';
+    let dashColor = isConnectedToStart ? '#ffffffaa' : '#ffffff44';
     
-    if (isConnectedToStart) {
-      pipeColor = 'stroke-[#a78b75]';
-      glowColor = 'stroke-[#a78b75]/20';
-    }
-    if (isVisited) {
-      pipeColor = 'stroke-[#7d8570]';
-      glowColor = 'stroke-[#7d8570]/40';
-    }
-    if (isCurrentScooterPos) {
-      pipeColor = 'stroke-[#fbbf24]';
-      glowColor = 'stroke-[#fbbf24]/60';
-    }
+    if (isVisited) roadColor = '#2d3748';
+    if (isCurrentScooterPos) roadColor = '#f59e0b'; // 暖黃色燈光感
 
-    const strokeWidth = 16;
-    const glowWidth = 24;
-
-    const renderSegment = (Component: any, props: any) => (
-      <React.Fragment key={props.d || props.x1}>
-        <Component {...props} className={`${glowColor} transition-all duration-300`} strokeWidth={glowWidth} strokeLinecap="round" />
-        <Component {...props} className={`${pipeColor} transition-all duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
-      </React.Fragment>
-    );
+    const roadWidth = 44;
+    const dashWidth = 2;
 
     switch (cell.type) {
       case PipeType.STRAIGHT:
-        return renderSegment('line', { x1: 50, y1: 0, x2: 50, y2: 100 });
+        return (
+          <>
+            {/* 路基 */}
+            <line x1="50" y1="0" x2="50" y2="100" stroke={roadColor} strokeWidth={roadWidth} strokeLinecap="butt" />
+            {/* 中央分隔線 */}
+            <line x1="50" y1="5" x2="50" y2="95" stroke={dashColor} strokeWidth={dashWidth} strokeDasharray="8,8" />
+            {/* 路沿石 */}
+            <line x1={50 - roadWidth/2} y1="0" x2={50 - roadWidth/2} y2="100" stroke="#a0aec0" strokeWidth="2" />
+            <line x1={50 + roadWidth/2} y1="0" x2={50 + roadWidth/2} y2="100" stroke="#a0aec0" strokeWidth="2" />
+          </>
+        );
       case PipeType.CORNER:
-        return renderSegment('path', { d: "M 50 100 Q 50 50 100 50", fill: "transparent" });
+        return (
+          <>
+            {/* 轉角綠地 */}
+            <path d="M 0 0 L 25 0 Q 25 25 0 25 Z" fill="#d9f99d" opacity="0.4" />
+            {/* 路基 */}
+            <path d="M 50 100 Q 50 50 100 50" fill="none" stroke={roadColor} strokeWidth={roadWidth} strokeLinecap="butt" />
+            {/* 中央分隔線 */}
+            <path d="M 50 100 Q 50 50 100 50" fill="none" stroke={dashColor} strokeWidth={dashWidth} strokeDasharray="10,10" />
+            {/* 路沿石 */}
+            <path d="M {50 - roadWidth/2} 100 Q {50 - roadWidth/2} {50 - roadWidth/2} 100 {50 - roadWidth/2}" fill="none" stroke="#a0aec0" strokeWidth="2" />
+            <path d="M {50 + roadWidth/2} 100 Q {50 + roadWidth/2} {50 + roadWidth/2} 100 {50 + roadWidth/2}" fill="none" stroke="#a0aec0" strokeWidth="2" />
+          </>
+        );
       default:
         return null;
     }
   };
 
-  const isVIP = cell.customerType === CustomerType.VIP;
-
   return (
     <div 
-      className={`relative flex items-center justify-center transition-all duration-200 rounded-sm overflow-visible
-        cursor-pointer hover:bg-[#faf6f0] active:scale-95
+      className={`relative flex items-center justify-center transition-all duration-300 rounded-sm overflow-visible
+        cursor-pointer bg-[#f9fafb] border-[0.5px] border-gray-100
         ${isConnectedToStart ? 'z-10' : 'z-0'}
-        ${isCurrentScooterPos ? 'scale-110 z-30' : ''}
-        ${isVisited && !isCurrentScooterPos ? 'bg-[#7d8570]/5' : ''}
-        ${isTutorialTarget ? 'ring-2 ring-inset ring-[#fbbf24] bg-[#fbbf24]/10 animate-pulse z-40' : ''}
+        ${isCurrentScooterPos ? 'scale-105 z-30' : ''}
+        ${isTutorialTarget ? 'ring-2 ring-inset ring-amber-400 bg-amber-50 animate-pulse z-40' : ''}
       `}
       style={{ width: `${gridSize}px`, height: `${gridSize}px` }}
       onClick={() => !isDriving && onRotate(cell.id)}
     >
-      <div className="absolute inset-0 pointer-events-none opacity-40">
-        {openings.includes(0) && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
-        {openings.includes(1) && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
-        {openings.includes(2) && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
-        {openings.includes(3) && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-current rounded-full" />}
-      </div>
+      {/* 基礎地磚感 */}
+      <div className="absolute inset-0 border border-gray-200/30 pointer-events-none" />
 
-      {isTutorialTarget && <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-2xl animate-bounce pointer-events-none drop-shadow-lg">👇</div>}
-
-      {isEntryCell && <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 opacity-40 pointer-events-none text-[8px] font-bold text-[#a78b75]">▶</div>}
-      {isExitCell && <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 opacity-40 pointer-events-none text-[8px] font-bold text-[#a78b75]">▶</div>}
-
-      {isCurrentScooterPos && <div className="absolute inset-0 bg-yellow-400/20 rounded-full animate-ping scale-75 pointer-events-none" />}
+      {isEntryCell && <div className="absolute -left-2 top-1/2 -translate-y-1/2 z-20 text-[10px] animate-pulse">🚩</div>}
+      {isExitCell && <div className="absolute -right-2 top-1/2 -translate-y-1/2 z-20 text-[10px]">🏁</div>}
 
       <svg 
         viewBox="0 0 100 100" 
-        className={`w-full h-full transform transition-all duration-300 
-          ${isConnectedToStart ? 'text-[#a78b75]' : 'text-[#d1d5db]'}
-          ${isVisited ? 'text-[#7d8570]' : ''}
-          ${isCurrentScooterPos ? 'drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]' : ''}
+        className={`w-full h-full transform transition-transform duration-300 
+          ${isCurrentScooterPos ? 'drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]' : 'drop-shadow-sm'}
         `}
         style={{ transform: `rotate(${cell.rotation * 90}deg)` }}
       >
-        {renderPipe()}
+        {renderRoad()}
       </svg>
       
       {cell.hasCustomer && !isVisited && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className={`relative rounded-full w-9 h-9 flex flex-col items-center justify-center shadow-lg border-2 transition-all
-            ${isVIP 
-              ? 'bg-gradient-to-br from-[#fef3c7] to-[#fbbf24] border-[#d97706] scale-110 ring-2 ring-[#fbbf24]/50' 
-              : 'bg-white border-[#e5e7eb]'}`}>
-             {isVIP && <span className="absolute -top-1.5 -right-1.5 text-[10px] animate-pulse">⭐</span>}
-             <span className="text-sm leading-none">{isVIP ? '👑' : '🙋'}</span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none drop-shadow-md">
+          <div className={`relative rounded-full w-8 h-8 flex flex-col items-center justify-center shadow-md border-2 transition-all
+            ${cell.customerType === CustomerType.VIP 
+              ? 'bg-amber-100 border-amber-400 scale-110' 
+              : 'bg-white border-blue-100'}`}>
+             <span className="text-sm leading-none">{cell.customerType === CustomerType.VIP ? '👑' : '🙋'}</span>
           </div>
         </div>
       )}
 
       {isCurrentScooterPos && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-bounce">
-           <span className="text-2xl drop-shadow-md">🛵</span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+           <span className="text-2xl drop-shadow-lg -mt-1 transform -rotate-12">🛵</span>
         </div>
       )}
     </div>
