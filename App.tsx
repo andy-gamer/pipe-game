@@ -81,7 +81,6 @@ export default function App() {
     return getReachableCells(grid, currentLevel.startRow);
   }, [grid, currentLevel]);
 
-  // Persist state
   useEffect(() => localStorage.setItem(STORAGE_KEYS.CURRENT_LEVEL_ID, levelId.toString()), [levelId]);
   useEffect(() => localStorage.setItem(STORAGE_KEYS.SCORE, score.toString()), [score]);
   useEffect(() => localStorage.setItem(STORAGE_KEYS.STREAK, streak.toString()), [streak]);
@@ -98,8 +97,15 @@ export default function App() {
         let rotation = initial ? initial.rotation : Math.floor(Math.random() * 4);
 
         if (!initial) {
-          const types = [PipeType.STRAIGHT, PipeType.CORNER, PipeType.TEE];
-          if (currentLevel.difficulty !== Difficulty.EASY) types.push(PipeType.CROSS);
+          // Weighted random: More corners and tees make pathfinding easier between rows
+          const types = [
+            PipeType.CORNER, PipeType.CORNER, PipeType.CORNER, 
+            PipeType.STRAIGHT, PipeType.STRAIGHT,
+            PipeType.TEE, PipeType.TEE
+          ];
+          if (currentLevel.difficulty !== Difficulty.EASY) {
+            types.push(PipeType.CROSS);
+          }
           type = types[Math.floor(Math.random() * types.length)];
         }
 
@@ -195,7 +201,6 @@ export default function App() {
     if (levelId < LEVELS.length) {
       setLevelId(prev => prev + 1);
     } else {
-      // End of all levels, maybe restart from 1 or show credits
       setLevelId(1);
     }
   };
@@ -224,7 +229,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Global Progress Bar */}
         <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
           <div 
             className="h-full bg-[#7d8570] transition-all duration-1000 ease-out"
@@ -275,17 +279,23 @@ export default function App() {
             }}
           >
             {grid.map((row, y) => 
-              row.map((cell, x) => (
-                <Cell 
-                  key={cell.id} 
-                  cell={cell} 
-                  isConnectedToStart={reachableFromStart.has(cell.id)}
-                  isDriving={isDriving}
-                  isCurrentScooterPos={currentScooterId === cell.id}
-                  onRotate={handleRotate}
-                  gridSize={cellSize}
-                />
-              ))
+              row.map((cell, x) => {
+                const isEntryCell = x === 0 && y === currentLevel.startRow;
+                const isExitCell = x === currentLevel.gridSize.cols - 1 && y === currentLevel.exitRow;
+                return (
+                  <Cell 
+                    key={cell.id} 
+                    cell={cell} 
+                    isConnectedToStart={reachableFromStart.has(cell.id)}
+                    isDriving={isDriving}
+                    isCurrentScooterPos={currentScooterId === cell.id}
+                    onRotate={handleRotate}
+                    gridSize={cellSize}
+                    isEntryCell={isEntryCell}
+                    isExitCell={isExitCell}
+                  />
+                );
+              })
             )}
 
             {scorePopups.map(popup => (

@@ -9,21 +9,20 @@ interface CellProps {
   isCurrentScooterPos: boolean;
   onRotate: (id: string) => void;
   gridSize: number;
+  isEntryCell?: boolean;
+  isExitCell?: boolean;
 }
 
-const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurrentScooterPos, onRotate, gridSize }) => {
+const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurrentScooterPos, onRotate, gridSize, isEntryCell, isExitCell }) => {
   const renderPipe = () => {
-    // Standard color for inactive pipes, warm brand color for active ones
     const pipeColor = isConnectedToStart ? 'stroke-[#a78b75]' : 'stroke-[#d1d5db]';
     const glowColor = isConnectedToStart ? 'stroke-[#a78b75]/20' : 'stroke-transparent';
     const strokeWidth = 16;
-    const glowWidth = 24; // Slightly wider for the glow effect
+    const glowWidth = 24;
 
     const renderSegment = (Component: any, props: any) => (
       <>
-        {/* Subtle background glow segment */}
         <Component {...props} className={`${glowColor} transition-all duration-500`} strokeWidth={glowWidth} strokeLinecap="round" />
-        {/* Main pipe segment */}
         <Component {...props} className={`${pipeColor} transition-all duration-300`} strokeWidth={strokeWidth} strokeLinecap="round" />
       </>
     );
@@ -63,6 +62,18 @@ const Cell: React.FC<CellProps> = ({ cell, isConnectedToStart, isDriving, isCurr
       style={{ width: `${gridSize}px`, height: `${gridSize}px` }}
       onClick={() => !isDriving && onRotate(cell.id)}
     >
+      {/* Visual Indicator for Entry/Exit Requirements */}
+      {isEntryCell && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 opacity-20 pointer-events-none text-[8px] font-bold text-[#a78b75]">
+          ▶
+        </div>
+      )}
+      {isExitCell && (
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 opacity-20 pointer-events-none text-[8px] font-bold text-[#a78b75]">
+          ▶
+        </div>
+      )}
+
       <svg 
         viewBox="0 0 100 100" 
         className={`w-full h-full transform transition-transform duration-300 ${isConnectedToStart ? 'drop-shadow-[0_0_2px_rgba(167,139,117,0.3)]' : ''}`}
