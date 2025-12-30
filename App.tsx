@@ -27,7 +27,6 @@ const STORAGE_KEYS = {
 };
 
 export default function App() {
-  // --- States ---
   const [levelId, setLevelId] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_LEVEL_ID);
     return saved ? parseInt(saved, 10) : 1;
@@ -48,7 +47,6 @@ export default function App() {
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   const [tutorialStep, setTutorialStep] = useState(0);
   
-  // --- Memos ---
   const currentLevel = useMemo(() => LEVELS.find(l => l.id === levelId) || LEVELS[0], [levelId]);
   const reachableFromStart = useMemo(() => (grid.length > 0 ? getReachableCells(grid, currentLevel.startRow) : new Set<string>()), [grid, currentLevel]);
   const hasPathToExit = useMemo(() => {
@@ -59,41 +57,53 @@ export default function App() {
   const cellSize = useMemo(() => Math.min(60, (window.innerWidth - 100) / currentLevel.gridSize.cols), [currentLevel]);
   const progressPercentage = (levelId / LEVELS.length) * 100;
 
-  // --- Effects ---
   useEffect(() => localStorage.setItem(STORAGE_KEYS.CURRENT_LEVEL_ID, levelId.toString()), [levelId]);
   useEffect(() => localStorage.setItem(STORAGE_KEYS.SCORE, score.toString()), [score]);
   useEffect(() => localStorage.setItem(STORAGE_KEYS.STREAK, streak.toString()), [streak]);
   
   useEffect(() => {
     const tutorialDone = localStorage.getItem(STORAGE_KEYS.TUTORIAL_DONE);
-    if (!tutorialDone && levelId === 1 && gameState === 'playing') {
-      setTutorialStep(1);
-    }
+    if (!tutorialDone && levelId === 1 && gameState === 'playing') setTutorialStep(1);
   }, [levelId, gameState]);
 
-  // Transition from step 2 to 3 automatically when path is connected
   useEffect(() => { 
-    if (tutorialStep === 2 && hasPathToExit) {
-      setTutorialStep(3);
-    }
+    if (tutorialStep === 2 && hasPathToExit) setTutorialStep(3);
   }, [hasPathToExit, tutorialStep]);
 
-  // --- Logic ---
   const resetLevel = useCallback(() => {
     const { rows, cols } = currentLevel.gridSize;
     const newGrid: CellData[][] = [];
+    
+    // 智慧型隨機池：平衡 直管、彎管、三叉
+    const balancedPool = [
+      PipeType.STRAIGHT, PipeType.STRAIGHT, 
+      PipeType.CORNER, PipeType.CORNER, 
+      PipeType.TEE, PipeType.TEE, 
+      PipeType.CROSS
+    ];
+
     for (let y = 0; y < rows; y++) {
       const row: CellData[] = [];
       for (let x = 0; x < cols; x++) {
         const initial = currentLevel.initialPipes.find(p => p.x === x && p.y === y);
+        const customer = currentLevel.customers.find(c => c.x === x && c.y === y);
+        
         let type = initial ? initial.type : PipeType.STRAIGHT;
         let rotation = initial ? initial.rotation : Math.floor(Math.random() * 4);
+        
         if (!initial) {
-          const types = [PipeType.CORNER, PipeType.CORNER, PipeType.CORNER, PipeType.STRAIGHT, PipeType.STRAIGHT, PipeType.TEE, PipeType.TEE];
-          if (currentLevel.difficulty !== Difficulty.EASY) types.push(PipeType.CROSS);
-          type = types[Math.floor(Math.random() * types.length)];
+          // 如果是關鍵位置（顧客格、起點相鄰、終點相鄰），增加靈活性
+          const isCritical = !!customer || (x === 0 && y === currentLevel.startRow) || (x === cols - 1 && y === currentLevel.exitRow);
+          
+          if (isCritical) {
+            // 關鍵格子優先使用 TEE 或 CROSS，確保多向連通
+            const complexTypes = [PipeType.TEE, PipeType.TEE, PipeType.CROSS, PipeType.CORNER];
+            type = complexTypes[Math.floor(Math.random() * complexTypes.length)];
+          } else {
+            type = balancedPool[Math.floor(Math.random() * balancedPool.length)];
+          }
         }
-        const customer = currentLevel.customers.find(c => c.x === x && c.y === y);
+        
         row.push({ id: `${x}-${y}`, type, rotation, hasCustomer: !!customer, customerType: customer?.type, x, y, isVisited: false });
       }
       newGrid.push(row);
@@ -102,8 +112,7 @@ export default function App() {
     setGameState('playing');
     setCurrentScooterId(null);
     setScorePopups([]);
-    const diffText = currentLevel.difficulty === Difficulty.EASY ? '簡單輕鬆' : currentLevel.difficulty === Difficulty.MEDIUM ? '普通社區' : '困難巷弄';
-    setMessage(`第 ${currentLevel.id} 關：${diffText}。目標顧客：${currentLevel.targetCustomerCount} 位。`);
+    setMessage(`第 ${currentLevel.id} 關：目標顧客 ${currentLevel.targetCustomerCount} 位。加油！`);
     setIsDriving(false);
   }, [currentLevel]);
 
@@ -112,11 +121,7 @@ export default function App() {
   const handleRotate = useCallback((id: string) => {
     if (isDriving) return;
     setGrid(prev => prev.map(row => row.map(cell => cell.id === id ? { ...cell, rotation: (cell.rotation + 1) % 4 } : cell)));
-    
-    // Tutorial: Advance from step 1 once user interacts with a pipe
-    if (tutorialStep === 1) {
-      setTutorialStep(2);
-    }
+    if (tutorialStep === 1) setTutorialStep(2);
   }, [isDriving, tutorialStep]);
 
   const handleCheckDelivery = () => {
@@ -146,11 +151,11 @@ export default function App() {
           setGameState('success');
           setStreak(s => s + 1);
           setScore(s => s + 500);
-          setMessage(`使命必達！獲得額外獎金。`);
+          setMessage(`完成！獲得額外獎金。`);
         } else {
           setGameState('failed');
           setStreak(0);
-          setMessage(!reachedExit ? `路徑中斷了，沒辦法抵達目的地。` : `雖然抵達，但遺漏了重要的客人。`);
+          setMessage(!reachedExit ? `目的地連不通，請再檢查一下路徑。` : `遺漏了重要的客人，請繞路去載他們。`);
         }
         setIsDriving(false);
       }
@@ -159,72 +164,27 @@ export default function App() {
 
   const handleNextLevel = () => setLevelId(prev => (prev < LEVELS.length ? prev + 1 : 1));
 
-  // Determine a specific target cell for level 1 tutorial
   const tutorialTargetId = useMemo(() => {
-    if (levelId === 1 && tutorialStep === 1) {
-      // Direct the user to the first cell next to the scooter
-      return `${0}-${currentLevel.startRow}`;
-    }
+    if (levelId === 1 && tutorialStep === 1) return `${0}-${currentLevel.startRow}`;
     return null;
   }, [levelId, tutorialStep, currentLevel]);
 
   return (
     <div className="relative flex flex-col h-screen-safe max-w-md mx-auto bg-[#fdfbf7] text-[#5d5c58] overflow-hidden">
       {gameState === 'success' && <ConfettiOverlay />}
-      
-      <TutorialOverlay 
-        step={tutorialStep} 
-        hasPathToExit={hasPathToExit} 
-        onClose={() => setTutorialStep(0)}
-        onNext={() => {
-          if (tutorialStep < 3 && !(tutorialStep === 2 && hasPathToExit)) {
-            setTutorialStep(s => s + 1);
-          } else {
-            setTutorialStep(0);
-            localStorage.setItem(STORAGE_KEYS.TUTORIAL_DONE, 'true');
-          }
+      <TutorialOverlay step={tutorialStep} hasPathToExit={hasPathToExit} onClose={() => setTutorialStep(0)} onNext={() => {
+          if (tutorialStep < 3 && !(tutorialStep === 2 && hasPathToExit)) setTutorialStep(s => s + 1);
+          else { setTutorialStep(0); localStorage.setItem(STORAGE_KEYS.TUTORIAL_DONE, 'true'); }
         }}
       />
-      
-      <Header 
-        levelId={levelId}
-        totalLevels={LEVELS.length}
-        score={score}
-        streak={streak}
-        difficulty={currentLevel.difficulty}
-        progressPercentage={progressPercentage}
-        gridCols={currentLevel.gridSize.cols}
-        gridRows={currentLevel.gridSize.rows}
-      />
-
+      <Header levelId={levelId} totalLevels={LEVELS.length} score={score} streak={streak} difficulty={currentLevel.difficulty} progressPercentage={progressPercentage} gridCols={currentLevel.gridSize.cols} gridRows={currentLevel.gridSize.rows} />
       <main className="flex-1 flex flex-col items-center justify-center px-4 relative">
-        <GameBoard 
-          grid={grid}
-          currentLevel={currentLevel}
-          reachableFromStart={reachableFromStart}
-          isDriving={isDriving}
-          currentScooterId={currentScooterId}
-          onRotate={handleRotate}
-          cellSize={cellSize}
-          scorePopups={scorePopups}
-          setScorePopups={setScorePopups}
-          tutorialHighlight={tutorialStep === 1 || tutorialStep === 2}
-          tutorialTargetId={tutorialTargetId}
-        />
+        <GameBoard grid={grid} currentLevel={currentLevel} reachableFromStart={reachableFromStart} isDriving={isDriving} currentScooterId={currentScooterId} onRotate={handleRotate} cellSize={cellSize} scorePopups={scorePopups} setScorePopups={setScorePopups} tutorialHighlight={tutorialStep === 1 || tutorialStep === 2} tutorialTargetId={tutorialTargetId} />
         <div className="mt-8 text-center w-full px-8 min-h-[48px]">
            <p className="text-[11px] text-[#888] font-medium leading-relaxed italic">"{message}"</p>
         </div>
       </main>
-
-      <ControlPanel 
-        gameState={gameState}
-        isDriving={isDriving}
-        hasPathToExit={hasPathToExit}
-        tutorialStep={tutorialStep}
-        onCheckDelivery={handleCheckDelivery}
-        onResetLevel={resetLevel}
-        onNextLevel={handleNextLevel}
-      />
+      <ControlPanel gameState={gameState} isDriving={isDriving} hasPathToExit={hasPathToExit} tutorialStep={tutorialStep} onCheckDelivery={handleCheckDelivery} onResetLevel={resetLevel} onNextLevel={handleNextLevel} />
     </div>
   );
 }
